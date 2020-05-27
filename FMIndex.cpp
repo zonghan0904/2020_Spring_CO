@@ -38,23 +38,23 @@ char** inputReads(char *file_path, int *read_count, int *length){
     FILE *read_file = fopen(file_path, "r");
     int ch, lines=0;
     char **reads;
-    do                                                                                                 
-    {                                                                                                  
-        ch = fgetc(read_file);                                                                            
-        if (ch == '\n')                                                                                
-            lines++;                                                                                   
+    do
+    {
+        ch = fgetc(read_file);
+        if (ch == '\n')
+            lines++;
     } while (ch != EOF);
     rewind(read_file);
     reads=(char**)malloc(lines*sizeof(char*));
     *read_count = lines;
-    int i = 0;                                                                                         
-    size_t len = 0;                                                                                    
-    for(i = 0; i < lines; i++)                                                                         
+    int i = 0;
+    size_t len = 0;
+    for(i = 0; i < lines; i++)
     {
         reads[i] = NULL;
-        len = 0;                                                                                
+        len = 0;
         getline(&reads[i], &len, read_file);
-    }                                                                                                  
+    }
     fclose(read_file);
     int j=0;
     while(reads[0][j]!='\n')
@@ -140,9 +140,9 @@ int** makeFMIndex(char ***suffixes, int read_count, int read_length, int F_count
             SA_Final[i*read_length+j][1]=i;
         }
     }
-    
+
     char *temp=(char*)malloc(read_length*sizeof(char));
-    
+
     int **L_count=(int**)malloc(read_length*read_count*sizeof(int*));
     for(i=0;i<read_length*read_count;i++){
         L_count[i]=(int*)malloc(4*sizeof(int));
@@ -172,7 +172,7 @@ int** makeFMIndex(char ***suffixes, int read_count, int read_length, int F_count
     free(temp);
     char this_F = '$';
     j=0;
-    
+
     //Calculation of F_count's
     for(i=0;i<read_count*read_length;i++){
         int count=0;
@@ -184,7 +184,7 @@ int** makeFMIndex(char ***suffixes, int read_count, int read_length, int F_count
         if(temp_suffixes[i][0]=='T')
             break;
     }
-    
+
     //Calculation of L's and L_count's
     for(i=0;i<read_count*read_length;i++){
         char ch = temp_suffixes[i][read_length-1];
@@ -208,19 +208,143 @@ int** makeFMIndex(char ***suffixes, int read_count, int read_length, int F_count
 
 //-----------------------DO NOT CHANGE--------------------------------------------
 
+// ########################################### my implementation ###########################################
+
+void swap(char **tmp_suf, int a, int b){
+    char *tmp = (char *)malloc(read_length * sizeof(char));
+    memcpy(tmp, tmp_suf[a], read_length * sizeof(char));
+    memcpy(tmp_suf[a], tmp_suf[b], read_length * sizeof(char));
+    memcpy(tmp_suf[b], tmp, read_length * sizeof(char));
+    free(tmp);
+    int tmp_int = SA_Final_student[a][0];
+    SA_Final_student[a][0] = SA_Final_student[b][0];
+    SA_Final_student[b][0] = tmp_int;
+    tmp_int = SA_Final_student[a][1];
+    SA_Final_student[a][1] = SA_Final_student[b][1];
+    SA_Final_student[b][1] = tmp_int;
+}
+
+int RandomInteger(int low, int high){
+    srand(0);
+    return rand()%(high-low+1) + low;
+}
+
+int Partition(char **tmp_suf, int l, int r){
+    int randnum = RandomInteger(l, r);
+    swap(tmp_suf, randnum, r);
+    int i = l-1;
+    char *x = tmp_suf[r];
+    for (int j = l; j < r; j++){
+        if (compSuffixes(tmp_suf[j], x, read_length) < 0){
+            i++;
+            swap(tmp_suf, i, j);
+        }
+    }
+    i += 1;
+    swap(tmp_suf, i, r);
+    return i;
+}
+
+void QuickSort(char **tmp_suf, int l, int r){
+    if (l < r){
+        int m = Partition(tmp_suf, l, r);
+        QuickSort(tmp_suf, l, m-1);
+        QuickSort(tmp_suf, m+1, r);
+    }
+}
+
+int** makeFMIndex_student(char ***suffixes_student, int read_count, int read_length, int F_count_student[], char *L_student){
+    int i, j;
+
+    SA_Final_student=(int**)malloc(read_count*read_length*sizeof(int*));
+    for(i=0;i<read_count*read_length;i++)
+        SA_Final_student[i]=(int*)malloc(2*sizeof(int));
+
+    //Temporary storage for collecting together all suffixes
+    char **temp_suffixes=(char**)malloc(read_count*read_length*sizeof(char*));
+
+    //Initalization of temporary storage
+    for(i=0;i<read_count;i++){
+        for(j=0;j<read_length;j++){
+            temp_suffixes[i*read_length+j]=(char*)malloc(read_length*sizeof(char));
+            memcpy(&temp_suffixes[i*read_length+j], &suffixes_student[i][j],read_length*sizeof(char));
+            SA_Final_student[i*read_length+j][0]=j;
+            SA_Final_student[i*read_length+j][1]=i;
+        }
+    }
+
+    char *temp=(char*)malloc(read_length*sizeof(char));
+
+    int **L_count=(int**)malloc(read_length*read_count*sizeof(int*));
+
+    for(i=0;i<read_length*read_count;i++){
+        L_count[i]=(int*)malloc(4*sizeof(int));
+        for(j=0;j<4;j++){
+            L_count[i][j]=0;
+        }
+    }
+
+
+    //Focus on improving this for evaluation purpose
+    //Sorting of suffixes
+    QuickSort(temp_suffixes, 0, read_count * read_length - 1);
+
+    free(temp);
+    char this_F = '$';
+    j=0;
+
+    //Calculation of F_count's
+    for(i=0;i<read_count*read_length;i++){
+        int count=0;
+        while(temp_suffixes[i][0]==this_F){
+            count++;i++;
+        }
+        F_count_student[j++]=j==0?count:count+1;
+        this_F = temp_suffixes[i][0];
+        if(temp_suffixes[i][0]=='T')
+            break;
+    }
+
+    //Calculation of L's and L_count's
+    for(i=0;i<read_count*read_length;i++){
+        char ch = temp_suffixes[i][read_length-1];
+        L_student[i]=ch;
+        if(i>0){
+            for(int k=0;k<4;k++)
+                L_count[i][k]=L_count[i-1][k];
+        }
+        if(ch=='A')
+            L_count[i][0]++;
+        else if(ch=='C')
+            L_count[i][1]++;
+        else if(ch=='G')
+            L_count[i][2]++;
+        else if(ch=='T')
+            L_count[i][3]++;
+    }
+
+    return L_count;
+}
+// ########################################### my implementation ###########################################
+
 int main(int argc, char *argv[]){
 
-    char * read_data_file= "COsmall.txt";   // input DATA
+    char * read_data_file= "P1000.txt";   // input DATA
 
     char **reads = inputReads(read_data_file, &read_count, &read_length);//Input reads from file
 
     char ***suffixes=(char***)malloc(read_count*sizeof(char**));//Storage for read-wise suffixes
-  
+
+
+    // ########################################### my implementation ###########################################
+    char ***suffixes_student=(char***)malloc(read_count*sizeof(char**));
+    L_student=(char*)malloc(read_count*read_length*sizeof(char*));
+    // ########################################### my implementation ###########################################
 
     //-----------------------------Structures for correctness check----------------------------------------------
     L=(char*)malloc(read_count*read_length*sizeof(char*));//Final storage for last column of sorted suffixes
     //-----------------------------Structures for correctness check----------------------------------------------
-    
+
 
     //-----------Default implementation----------------
     //-----------Time capture start--------------------
@@ -238,11 +362,11 @@ int main(int argc, char *argv[]){
     for(int i=0;i<read_count;i++){
         suffixes[i]=generateSuffixes(reads[i], read_length, i);
     }
-   
+
 
     //Calculate finl FM-Index
     L_counts = makeFMIndex(suffixes, read_count, read_length, F_counts, L);
-    
+
     gettimeofday(&TimeValue_Final, &TimeZone_Final);
     time_start = TimeValue_Start.tv_sec * 1000000 + TimeValue_Start.tv_usec;
     time_end = TimeValue_Final.tv_sec * 1000000 + TimeValue_Final.tv_usec;
@@ -252,25 +376,35 @@ int main(int argc, char *argv[]){
 
 
     //-----------Your implementations------------------
-    gettimeofday(&TimeValue_Final, &TimeZone_Final);
+    gettimeofday(&TimeValue_Start, &TimeZone_Start);
     time_start = TimeValue_Start.tv_sec * 1000000 + TimeValue_Start.tv_usec;
     //-----------Call your functions here--------------------
 
+
+    for(int i=0;i<read_count;i++){
+        suffixes_student[i]=generateSuffixes(reads[i], read_length, i);
+    }
+
+    L_counts_student = makeFMIndex_student(suffixes_student, read_count, read_length, F_counts_student, L_student);
+
+
     //-----------Call your functions here--------------------
+    gettimeofday(&TimeValue_Final, &TimeZone_Final);
     time_end = TimeValue_Final.tv_sec * 1000000 + TimeValue_Final.tv_usec;
     time_overhead_student = (time_end - time_start)/1000000.0;
     //--------------------------------------------------
 
     //----------------For debug purpose only-----------------
-    //for(int i=0;i<read_count*read_length;i++)        
+    //for(int i=0;i<read_count*read_length;i++)
     //    cout<<L[i]<<"\t"<<SA_Final[i][0]<<","<<SA_Final[i][1]<<"\t"<<L_counts[i][0]<<","<<L_counts[i][1]<<","<<L_counts[i][2]<<","<<L_counts[i][3]<<endl;
     //--------------------------------------------------
 
     //---------------Correction check and speedup calculation----------------------
     float speedup=0.0;
-    //if(checker()==1)
-    //    speedup = time_overhead_default/time_overhead_student;
+    if(checker()==1)
+        speedup = time_overhead_default/time_overhead_student;
     cout<<"Speedup="<<speedup<<endl;
     //-----------------------------------------------------------------------------
+    cout << "default: " << time_overhead_default << ", student: " << time_overhead_student << endl;
     return 0;
 }
