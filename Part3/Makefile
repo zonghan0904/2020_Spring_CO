@@ -1,5 +1,5 @@
 CC = g++
-EXE = FMIndex
+EXE = Search
 SRC = FMIndex.cpp main.cpp
 OBJ = FMIndex.o main.o
 INCDIR = ./
