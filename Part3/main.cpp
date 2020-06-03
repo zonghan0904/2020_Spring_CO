@@ -29,7 +29,7 @@ int main(int argc, char *argv[]){
     set<int>::iterator it;
 
     int I_table[4] = {0, 0, 0, 0};
-    int **C_table = (int **)malloc((read_count * read_length + 1) * sizeof(int*));
+    int c_top = 0, c_bottom = 0;
 
     //-----------Time capture start--------------------
     struct timeval  TimeValue_Start;
@@ -52,15 +52,6 @@ int main(int argc, char *argv[]){
 	if (i == 0) I_table[i] = F_counts_student[i] - 1;
 	else I_table[i] = I_table[i-1] + F_counts_student[i];
     }
-    for (int i = 0; i < read_count * read_length + 1; i++){
-	C_table[i] = (int*)malloc(4*sizeof(int));
-	if (i == 0){
-	    memset(C_table[i], 0, 4 * sizeof(int));
-	}
-	else{
-	    C_table[i] = L_counts_student[i-1];
-	}
-    }
 
     for (int i = length - 1; i >= 0; i--){
 	char c = input[i];
@@ -82,8 +73,13 @@ int main(int argc, char *argv[]){
 		break;
 	}
 
-	top = C_table[top][index] + I_table[index];
-	bottom = C_table[bottom][index] + I_table[index];
+	if (top - 1 < 0) c_top = 0;
+	else c_top = L_counts_student[top - 1][index];
+	if (bottom - 1 < 0) c_bottom = 0;
+	else c_bottom = L_counts_student[bottom - 1][index];
+
+	top = c_top + I_table[index];
+	bottom = c_bottom + I_table[index];
 
 	if (bottom <= top){
 	    find = false;
