@@ -1,15 +1,12 @@
 #include <iostream>
 #include <string>
-#include <set>
 #include "FMIndex.h"
-
-#define BUFFERSIZE 1024
 
 using namespace std;
 
 int main(int argc, char *argv[]){
 
-    char * read_data_file= "P1000.txt";   // input DATA
+    char * read_data_file= "P10000.txt";   // input DATA
 
     char **reads = inputReads(read_data_file, &read_count, &read_length);//Input reads from file
 
@@ -25,8 +22,7 @@ int main(int argc, char *argv[]){
     int bottom = read_count * read_length;
     bool find = true;
     int match_num = 0;
-    set<int> checked_data;
-    set<int>::iterator it;
+    int check_data[read_count * read_length] = {0};
 
     int I_table[4] = {0, 0, 0, 0};
     int c_top = 0, c_bottom = 0;
@@ -90,14 +86,10 @@ int main(int argc, char *argv[]){
 
     if (find == true){
 	for (int i = top; i < bottom; i++){
-	     it = checked_data.find(SA_Final_student[i][1]);
-	     if (it != checked_data.end()){
-	         continue;
-	     }
-	     else{
-	         checked_data.insert(SA_Final_student[i][1]);
-	         match_num += 1;
-	     }
+	    if (check_data[SA_Final_student[i][1]] == 0){
+	        match_num += 1;
+	        check_data[SA_Final_student[i][1]] = 1;
+	    }
 	}
     }
 
@@ -106,8 +98,6 @@ int main(int argc, char *argv[]){
     time_overhead_student = (time_end - time_start)/1000000.0;
 
     cout << "Number of reads match this substring: " << match_num << endl;
-    // for (it = checked_data.begin(); it != checked_data.end(); ++it)
-    //     cout << "found the substring in line: " << *it + 1 << endl;
 
     // cout <<  "Execution time: " << time_overhead_student << endl;
     return 0;
